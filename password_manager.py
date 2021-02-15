@@ -1,6 +1,7 @@
 import string, random
 
-with open(r"D:\Mimisbrunnr\The Eye of Odin\The Keys Copy.txt", "r") as f:
+file_path = '' # put in the path to the file that stores the passwords
+with open(file_path, "r") as f:
     cols = ["No", "NAME", "USERNAME", "EMAIL", "PASSWORD", "NOTES"]
     col_nos = []
     pwd_mgr = {col_name: [] for col_name in cols}
@@ -72,7 +73,7 @@ def add_to_file(insertion):
             break
         used += nos_spaces
         write_string += " " * nos_spaces
-    with open(r"D:\Mimisbrunnr\The Eye of Odin\The Keys Copy.txt", "a") as f:
+    with open(file_path, "a") as f:
         f.write(write_string)
 
 
