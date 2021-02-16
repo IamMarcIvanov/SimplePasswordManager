@@ -7,3 +7,6 @@ No \<some spaces\> NAME \<some spaces\> USERNAME \<some spaces\> PASSWORDS \<som
 Each password record is on a new line.
 Leave enough spaces in the \<some spaces\> element to accomodate the largest length item that you think might exist in that type. 
 The No column stores record numbers.
+
+# Changes to implement
+1. Add update functionality
