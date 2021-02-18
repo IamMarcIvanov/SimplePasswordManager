@@ -39,7 +39,7 @@ def search(s="", name_given=False):
                     pc.copy(pwd_mgr["PASSWORD"][int(choice) - 1])
                     print("Successfully added the requested password to clipboard.")
                 else:
-                    print("None of the records above has the above No value. \nYou have hosen not to copy anything to clipboard.")
+                    print("You have hosen not to copy anything to clipboard.")
             except ValueError:
                 print("Invalid input.")
     return matched_records
