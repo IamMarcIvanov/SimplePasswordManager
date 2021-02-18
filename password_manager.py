@@ -1,4 +1,5 @@
 import string, random
+import pyperclip as pc
 
 # index in pwd_mgr + 1 = No value
 
@@ -31,6 +32,16 @@ def search(s="", name_given=False):
             for col_name in cols:
                 print("{:>20}: {}".format(col_name, pwd_mgr[col_name][i]))
             print()
+        if not name_given:
+            choice = input("Enter No of record whose password you want to copy to clipboard (-1 if none): ")
+            try:
+                if int(choice) - 1 in matched_records:
+                    pc.copy(pwd_mgr["PASSWORD"][int(choice) - 1])
+                    print("Successfully added the requested password to clipboard.")
+                else:
+                    print("None of the records above has the above No value. \nYou have hosen not to copy anything to clipboard.")
+            except ValueError:
+                print("Invalid input.")
     return matched_records
 
 
@@ -106,10 +117,10 @@ def insert():
                 print("Confirmed that entry is new. Name accepted.")
                 insertion.append(s)
         elif col_name == "PASSWORD":
-            choice = input(
+            choice1 = input(
                 "For PASSWORD enter either 1 or 2:\n1. Enter password\n2. Generate password\n"
             )
-            if choice == "2":
+            if choice1 == "2":
                 pwd = generate_password()
                 insertion.append(pwd)
             elif choice == "1":
@@ -118,6 +129,9 @@ def insert():
             else:
                 print("Only enter 1 or 2. No other input accepted")
                 return
+            if input("Enter 1 if you want to add the password to clipboard: ") == "1":
+                pc.copy(insertion[-1])
+                print("Password successfully copied to clipboard")
         elif col_name == "EMAIL":
             email = [
                 "lordheisenbergpoirot@gmail.com",
@@ -192,7 +206,7 @@ def delete():
                     ind += 1
                 if del_ind != -1:
                     for col_name in cols:
-                        pwd_mgr[col_name].pop(ind)
+                        pwd_mgr[col_name].pop(del_ind)
                     print("The chosen record has been deleted.\n")
                 else:
                     print("There has been some error.\n")
