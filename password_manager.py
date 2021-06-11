@@ -1,234 +1,312 @@
-import string, random
-import pyperclip as pc
-
-# index in pwd_mgr + 1 = No value
-
-path = r"D:\Mimisbrunnr\The Eye of Odin\The Keys Copy.txt"
-with open(path, "r") as f:
-    cols = ["No", "NAME", "USERNAME", "EMAIL", "PASSWORD", "NOTES"]
-    col_nos = []
-    pwd_mgr = {col_name: [] for col_name in cols}
-    for line_nos, line in enumerate(f.readlines()):
-        if line_nos == 0:
-            col_nos = [line.index(col_name) for col_name in cols]
-            col_nos.append(1000)
-        else:
-            for i, col_name in enumerate(cols):
-                pwd_mgr[col_name].append(line[col_nos[i] : col_nos[i + 1]].strip())
+import string
+import random
+import pandas as pd
+from rich.console import Console
+from rich.table import Table
+from rich import box
+from rich.prompt import Prompt
+from rich.prompt import IntPrompt
+from typing import Union
+import datetime
 
 
-def search(s="", name_given=False):
-    if not name_given:
-        s = input("Enter string to search for: ")
-    matched_records = []
-    for ind, name in enumerate(pwd_mgr["NAME"]):
-        if name.lower().strip().find(s.lower().strip()) != -1:
-            matched_records.append(ind)
-    if len(matched_records) == 0:
-        print("No record found with that substring in name.")
-    else:
-        print("The following records were found: ")
-        for i in matched_records:
-            for col_name in cols:
-                print("{:>20}: {}".format(col_name, pwd_mgr[col_name][i]))
-            print()
-        if not name_given:
-            choice = input("Enter No of record whose password you want to copy to clipboard (-1 if none): ")
+console = Console()
+
+class PasswordManager:
+    def __init__(self, key_path: str = r'D:\LibraryOfBabel\Projects\PasswordManager\Key.csv'):
+        self.key_path = key_path
+        try:
             try:
-                if int(choice) - 1 in matched_records:
-                    pc.copy(pwd_mgr["PASSWORD"][int(choice) - 1])
-                    print("Successfully added the requested password to clipboard.")
-                else:
-                    print("You have hosen not to copy anything to clipboard.")
-            except ValueError:
-                print("Invalid input.")
-    return matched_records
-
-
-def generate_password():
-    length = int(input("{:>42}".format("Enter total length: ")))
-    min_digits = int((input("{:>42}".format("Enter minimum nos of digits: "))))
-    min_upcases = int(
-        (input("{:>42}".format("Enter minimum nos of uppercase letters: ")))
-    )
-    min_lowcases = int(
-        (input("{:>42}".format("Enter minimum nos of lowercase letters: ")))
-    )
-    min_spchars = int(
-        (input("{:>42}".format("Enter minimum nos of special characters: ")))
-    )
-
-    min_sum = min_digits + min_upcases + min_lowcases + min_spchars
-    if min_sum > length:
-        print("Error: Sum of least > length")
-    else:
-        all_allowed = ""
-        if min_digits:
-            all_allowed += string.digits
-        if min_upcases:
-            all_allowed += string.ascii_uppercase
-        if min_lowcases:
-            all_allowed += string.ascii_lowercase
-        if min_spchars:
-            all_allowed += string.punctuation
-
-        digits = random.choices(string.digits, k=min_digits)
-        upcases = random.choices(string.ascii_uppercase, k=min_upcases)
-        lowcases = random.choices(string.ascii_lowercase, k=min_lowcases)
-        spchars = random.choices(string.punctuation, k=min_spchars)
-
-        password_elements = digits + upcases + lowcases + spchars
-        password_elements += random.choices(all_allowed, k=length - min_sum)
-        random.shuffle(password_elements)
-        return "".join(password_elements)
-
-
-def add_to_file(insertion):
-    write_string = ""
-    used = 0
-    for i, item in enumerate(insertion):
-        write_string += item
-        used += len(item)
-        nos_spaces = col_nos[i + 1] - used
-        if nos_spaces <= 0:
-            print("Error: item too large")
-            break
-        used += nos_spaces
-        write_string += " " * nos_spaces
-    if insertion[0] == "No":
-        open(path, "w").close()
-        with open(path, "a") as f:
-            f.write(write_string.strip())
-    else:
-        with open(path, "a") as f:
-            f.write("\n" + write_string.strip())
-
-
-def insert():
-    insertion = [str(len(pwd_mgr["No"]) + 1)]
-    for col_name in cols[1:]:
-        if col_name == "NAME":
-            s = input("Enter NAME: ")
-            print("Checking if entry already exists:")
-            if search(s, name_given=True):
-                print("Entry already exists. Either delete and re-enter or update.")
-                return
-            else:
-                print("Confirmed that entry is new. Name accepted.")
-                insertion.append(s)
-        elif col_name == "PASSWORD":
-            choice1 = input(
-                "For PASSWORD enter either 1 or 2:\n1. Enter password\n2. Generate password\n"
-            )
-            if choice1 == "2":
-                pwd = generate_password()
-                insertion.append(pwd)
-            elif choice == "1":
-                s = input("Enter {}: ".format(col_name))
-                insertion.append(s)
-            else:
-                print("Only enter 1 or 2. No other input accepted")
-                return
-            if input("Enter 1 if you want to add the password to clipboard: ") == "1":
-                pc.copy(insertion[-1])
-                print("Password successfully copied to clipboard")
-        elif col_name == "EMAIL":
-            email = [
-                "lordheisenbergpoirot@gmail.com",
-                "f20180103@hyderabad.bits-pilani.ac.in",
-                "marcivanovofearth@gmail.com",
-            ]
-            choice = input(
-                "For EMAIL enter 1, 2, 3 or 4:\n1. "
-                + email[0]
-                + "\n2. "
-                + email[1]
-                + "\n3. "
-                + email[2]
-                + "\n4. Enter email\n"
-            )
-            if choice in ["1", "2", "3"]:
-                print("You have chosen email as:", email[int(choice) - 1])
-                insertion.append(email[int(choice) - 1])
-            elif choice == "4":
-                s = input("Enter {}: ".format(col_name))
-                insertion.append(s)
-            else:
-                print("Only enter 1, 2, 3 or 4. No other input accepted")
-                return
-        else:
-            s = input("Enter {}: ".format(col_name))
-            insertion.append(s)
-    add_to_file(insertion)
-    add_to_pwd_mgr(insertion)
-
-    print("\nThe data that has been entered is:")
-    for val, col_name in zip(insertion, cols):
-        print("{:>20}: {}".format(col_name, val))
-    print()
-
-
-def add_to_pwd_mgr(insertion):
-    for data, col_name in zip(insertion, cols):
-        pwd_mgr[col_name].append(data)
-
-
-def delete():
-    matched_records = search()
-    if matched_records:
-        choice = input(
-            "If (any of) the above record(s) match(es) the one you want to delete, enter its 'No' else enter -1: "
-        )
-        if int(choice) - 1 in matched_records:
-            print("The record you have chosen to delete is:")
-            for col_name in cols:
-                print("{:>20}: {}".format(col_name, pwd_mgr[col_name][int(choice) - 1]))
-            if (
-                int(
-                    input(
-                        "Enter 1 if you are ABSOLUTELY SURE about deleting this entry: "
-                    )
-                )
-                == 1
-            ):
-                add_to_file(cols)
-                ind = 0
-                del_ind = -1
-                while ind < len(pwd_mgr["No"]):
-                    if ind + 1 < int(choice):
-                        add_to_file([pwd_mgr[col_name][ind] for col_name in cols])
-                    elif ind + 1 == int(choice):
-                            pwd_mgr[col_name][ind] = "00"
-                            del_ind = ind
-                    else:
-                        pwd_mgr["No"][ind] = str(ind)
-                        add_to_file([pwd_mgr[col_name][ind] for col_name in cols])
-                    ind += 1
-                if del_ind != -1:
-                    for col_name in cols:
-                        pwd_mgr[col_name].pop(del_ind)
-                    print("The chosen record has been deleted.\n")
-                else:
-                    print("There has been some error.\n")
-        else:
-            print("Wrong input.")
+                self.database = pd.read_csv(self.key_path, index_col='No', sep=' ')
+            except FileNotFoundError:
+                console.print('[bright_red]File was not found. Creating new passwords file[/bright_red]')
+                with open(self.key_path, 'w') as f:
+                    f.write('')
+                self.database = pd.read_csv(self.key_path)
+        except pd.errors.EmptyDataError:
+            self.database = pd.DataFrame({'No': [], 'NAME': [], 'USERNAME': [], 'EMAIL': [], 'PASSWORD': [], 'NOTES': []})
+            self.database.set_index('No', inplace=True)
+            self.database.to_csv(self.key_path, line_terminator='\n', sep=' ')
+        self.start_interface()
+        self.database.to_csv(self.key_path, line_terminator='\n', sep=' ')
+    
+    def print_entries(self, db: Union[pd.DataFrame, pd.Series], name: str = '', pos: int = 0):
+        table = Table(title='[bright_green]{}[/bright_green]'.format(name), box=box.MINIMAL_DOUBLE_HEAD)
+        table.add_column('No', style='bright_yellow')
+        table.add_column('Name', style='bright_green')
+        table.add_column('Username', style='bright_cyan')
+        table.add_column('Email', style='bright_red')
+        table.add_column('Password', style='bright_magenta')
+        table.add_column('Notes', style='bright_blue')
+        try:
+            for i, row in db.iterrows():
+                table.add_row(str(i), str(row['NAME']), str(row['USERNAME']), str(row['EMAIL']), str(row['PASSWORD']), str(row['NOTES']))
+            console.print(table)
+            console.print('\n\n')
+        except AttributeError:
+            table.add_row(str(pos), str(db['NAME']), str(db['USERNAME']), str(db['EMAIL']), str(db['PASSWORD']), str(db['NOTES']))
+            console.print(table)
+            console.print('\n\n')
+            
+    def search(self, name: str) -> pd.DataFrame:
+        return self.database.loc[self.database.NAME.str.lower().str.find(name.lower()) != -1]
+    
+    def action_table(self, keyword: str):
+        table = Table(title='Action: {}'.format(keyword), box=box.MINIMAL_DOUBLE_HEAD)
+        table.add_column('Key', style='bright_yellow')
+        table.add_column('Meaning', style='bright_green')
+        table.add_row('1', 'Name')
+        table.add_row('2', 'Username')
+        table.add_row('3', 'Email')
+        table.add_row('4', 'Password')
+        table.add_row('5', 'Notes')
+        table.add_row('6', 'Done / Exit')
+        console.print(table)
+        console.print('\n\n')
         
-print("PASSWORD MANAGER".center(26, "-"))
-flag = True
-while flag:
-    choice = input("\nEnter 1, 2, 3 or 4:\n1. Search\n2. Insert\n3. Delete\n4. Exit\n")
-    if choice == "1":
-        print("You have chosen to SEARCH")
-        search()
-    elif choice == "2":
-        print("You have chosen to INSERT")
-        insert()
-    elif choice == "3":
-        print("You have chosen to DELETE")
-        delete()
-    elif choice == "4":
-        print("You have chosen to EXIT")
-        print("Bye!".center(26, "-"))
-        flag = False
-    else:
-        print("Enter only 1, 2 or 3. No other input accepted.")
+    def search_logic(self):
+        console.print('You have chosen to search')
+        name = Prompt.ask('Enter string to search for')
+        matches = self.search(name)
+        if len(matches) == 0:
+            console.print('[bright_red]No entries with given name[/bright_red]')
+            console.print('\n\n')
+            return
+        self.print_entries(matches, name)
+        nos = IntPrompt.ask('Enter No of entry to choose it', choices=list(map(str, matches.index.values)))
+
+        while True:
+            self.print_entries(self.database.iloc[nos-1], pos=nos)
+            self.action_table(keyword='copy to clipboard')
+            chosen = Prompt.ask('Copy to clipboard or exit', choices=list(map(str, range(1, 7))))
+            if chosen == '1':
+                df = pd.DataFrame([self.database.iloc[nos-1]['NAME']])
+                df.to_clipboard(index=False, header=False)
+                console.print('[bright_red]Added name to clipboard[/bright_red]')
+                console.print('\n\n')
+            elif chosen == '2':
+                df = pd.DataFrame([self.database.iloc[nos-1]['USERNAME']])
+                df.to_clipboard(index=False, header=False)
+                console.print('[bright_red]Added username to clipboard[/bright_red]')
+                console.print('\n\n')
+            elif chosen == '3':
+                df = pd.DataFrame([self.database.iloc[nos-1]['EMAIL']])
+                df.to_clipboard(index=False, header=False)
+                console.print('[bright_red]Added email to clipboard[/bright_red]')
+                console.print('\n\n')
+            elif chosen == '4':
+                df = pd.DataFrame([self.database.iloc[nos-1]['PASSWORD']])
+                df.to_clipboard(index=False, header=False)
+                console.print('[bright_red]Added password to clipboard[/bright_red]')
+                console.print('\n\n')
+            elif chosen == '5':
+                df = pd.DataFrame([self.database.iloc[nos-1]['NOTES']])
+                df.to_clipboard(index=False, header=False)
+                console.print('[bright_red]Added notes to clipboard[/bright_red]')
+                console.print('\n\n')
+            else:
+                console.print('[bright_yellow]We assume your work is done[/bright_yellow]')
+                console.print('\n\n')
+                break
+                
+    def make_home_table(self):
+        self.home = Table(title='PASSWORD MANAGER', box=box.MINIMAL_DOUBLE_HEAD)
+        self.home.add_column('Key', style='bright_yellow')
+        self.home.add_column('Meaning', style='bright_green')
+        self.home.add_row('1', 'Search')
+        self.home.add_row('2', 'Insert')
+        self.home.add_row('3', 'Delete')
+        self.home.add_row('4', 'Update')
+        self.home.add_row('5', 'Exit')
+    
+    def get_email(self) -> str:
+        mails = {
+            1: 'lordheisenbergpoirot@gmail.com', 
+            2: 'f20180103@hyderabad.bits-pilani.ac.in',
+            3: 'marcivanovofearth@gmail.com',
+            4: 'danish@hertzai.com',
+            5: 'danmoham1@publicisgroupe.net',
+            6: 'danish.mohammad@epsilon.com',
+            7: 'drfarzana31@gmail.com',
+        }
+        table = Table(title='Email', box=box.MINIMAL_DOUBLE_HEAD)
+        table.add_column('Key', style='bright_yellow')
+        table.add_column('Meaning', style='bright_green')
+        for mail_index in mails.keys():
+            table.add_row(str(mail_index), mails[mail_index])
+        table.add_row('8', 'Manually Enter Email')
+        
+        console.print(table)
+        console.print('\n\n')
+        mail_choice = IntPrompt.ask('Choose mail', choices=list(map(str, range(1, 9))))
+        if mail_choice in list(range(1, 8)):
+            return mails[mail_choice]
+        else:
+            return Prompt.ask('Enter email')
+    
+    def generate_password(self, length: int, n_lowercase: int, n_uppercase: int, n_special_characters: int, n_numbers: int):
+        n_unspecified = length - (n_lowercase + n_uppercase + n_special_characters + n_numbers)
+        ans = (random.choices(string.ascii_lowercase, k=n_lowercase)
+              + random.choices(string.ascii_uppercase, k=n_uppercase)
+              + random.choices(string.digits, k=n_numbers)
+              + random.choices(string.punctuation, k= n_special_characters)
+              + random.choices(string.ascii_letters + string.digits, k = max(0, n_unspecified)))
+        random.shuffle(ans)
+        return ''.join(ans)
+    
+    def get_password(self) -> str:
+        table = Table(title='Password', box=box.MINIMAL_DOUBLE_HEAD)
+        table.add_column('Key', style='bright_yellow')
+        table.add_column('Meaning', style='bright_green')
+        table.add_row('1', 'Generate Password')
+        table.add_row('2', 'Manually Enter Password')
+        console.print(table)
+        console.print('\n\n')
+        
+        password_method_choice = IntPrompt.ask('Chose mode of password entry', choices=['1', '2'])
+        if password_method_choice == 1:
+            pwd_len = IntPrompt.ask('Enter required length of password', choices=list(map(str, range(1, 400))))
+            min_small = IntPrompt.ask('Enter the minimum number of lowercase letters required', choices=list(map(str, range(399))))
+            min_large = IntPrompt.ask('Enter the minimum number of uppercase letters required', choices=list(map(str, range(399))))
+            min_special = IntPrompt.ask('Enter the minimum number of special characters required', choices=list(map(str, range(399))))
+            min_num = IntPrompt.ask('Enter the minimum number of numeric characters required', choices=list(map(str, range(399))))
+            if min_small + min_large + min_special + min_num > pwd_len:
+                console.print('[bright_red]The sum of the minimum requirements exceeds the maximum length[/bright_red]')
+                console.print("[bright_red]Thus a password will be set for you. Update it if you don't like it[/bright_red]")
+                pwd_len, min_small, min_large, min_special, min_num = 30, 5, 5, 5, 5
+            return self.generate_password(pwd_len, min_small, min_large, min_special, min_num)
+        else:
+            return Prompt.ask('Enter password')
+        
+    
+    def insert_logic(self):
+        console.print('You have chosen to insert')
+        name = Prompt.ask('Enter name to insert')
+        matches = self.search(name)
+        if len(matches) > 0:
+            console.print('[bright_yellow]It seems the entry already exists:[/bright_yellow]')
+            self.print_entries(matches, name)
+            console.print('[bright_red]Please update entry or enter unique name[/bright_red]')
+            console.print('\n\n')
+            return
+        else:
+            console.print('[bright_green]The name is unique. Continuing ...[/bright_green]')
+            username = Prompt.ask('Enter username')
+            email = self.get_email()
+            password = self.get_password()
+            notes = str(datetime.datetime.now()) + ' ' + Prompt.ask('Enter notes (except date and time)')
+            self.database.loc[self.database.index.max() + 1] = {'NAME': name, 'USERNAME': username, 'EMAIL': email, 'PASSWORD': password, 'NOTES': notes}
+        console.print('The following entry has been made')
+        self.print_entries(self.database.loc[self.database.index.max()], pos=self.database.index.max())
+    
+    def update_logic(self):
+        console.print('You have chosen to update')
+        name = Prompt.ask('Enter name of entry to update')
+        matches = self.search(name)
+        if len(matches) == 0:
+            console.print('There is no entry matching the name.')
+            console.print('\n\n')
+            return
+        else:
+            self.print_entries(matches, name)
+            nos = IntPrompt.ask('Enter No of entry to choose it', choices=list(map(str, matches.index.values)))
+            
+            while True:
+                self.print_entries(self.database.iloc[nos-1], pos=nos)
+                self.action_table(keyword='Update Entry')
+                chosen = IntPrompt.ask('Choose field to update', choices=list(map(str, range(1, 7))))
+                if chosen == 1:
+                    new_name = Prompt.ask('Enter new name')
+                    self.database.at[nos, 'NAME'] = new_name
+                    console.print('[bright_green]Entered new name[/bright_green]')
+                    
+                    df = pd.DataFrame([new_name])
+                    df.to_clipboard(index=False, header=False)
+                    console.print('[bright_red]Added new name to clipboard[/bright_red]')
+                    console.print('\n\n')
+                if chosen == 2:
+                    new_username = Prompt.ask('Enter new username')
+                    self.database.at[nos, 'USERNAME'] = new_username
+                    console.print('[bright_green]Entered new username[/bright_green]')
+                    
+                    df = pd.DataFrame([new_username])
+                    df.to_clipboard(index=False, header=False)
+                    console.print('[bright_red]Added new username to clipboard[/bright_red]')
+                    console.print('\n\n')
+                if chosen == 3:
+                    new_email = self.get_email()
+                    self.database.at[nos, 'EMAIL'] = new_email
+                    console.print('[bright_green]Entered new email[/bright_green]')
+                    
+                    df = pd.DataFrame([new_email])
+                    df.to_clipboard(index=False, header=False)
+                    console.print('[bright_red]Added new email to clipboard[/bright_red]')
+                    console.print('\n\n')
+                if chosen == 4:
+                    new_password = self.get_password()
+                    self.database.at[nos, 'PASSWORD'] = new_password
+                    console.print('[bright_green]Entered new password[/bright_green]')
+                    
+                    df = pd.DataFrame([new_password])
+                    df.to_clipboard(index=False, header=False)
+                    console.print('[bright_red]Added new password to clipboard[/bright_red]')
+                    console.print('\n\n')
+                if chosen == 5:
+                    new_notes = str(datetime.datetime.now()) + ' ' + Prompt.ask('Enter new notes (except date and time)')
+                    self.database.at[nos, 'NOTES'] = new_notes
+                    console.print('[bright_green]Entered new notes[/bright_green]')
+                    
+                    df = pd.DataFrame([new_notes])
+                    df.to_clipboard(index=False, header=False)
+                    console.print('[bright_red]Added new notes to clipboard[/bright_red]')
+                    console.print('\n\n')
+                if chosen == 6:
+                    console.print('[bright_yellow]We assume your work is done[/bright_yellow]')
+                    console.print('\n\n')
+                    break
+    
+    def delete_logic(self):
+        console.print('You have chosen to delete')
+        name = Prompt.ask('Enter name of entry to delete')
+        matches = self.search(name)
+        if len(matches) == 0:
+            console.print('There is no entry matching the name.')
+            console.print('\n\n')
+            return
+        else:
+            self.print_entries(matches, name)
+            nos = IntPrompt.ask('Enter No of entry to choose it', choices=list(map(str, matches.index.values)))
+            self.print_entries(self.database.iloc[nos-1], pos=nos)
+            table = Table(title='Delete Confirmation', box=box.MINIMAL_DOUBLE_HEAD)
+            table.add_column('Key', style='bright_yellow')
+            table.add_column('Meaning', style='bright_green')
+            table.add_row('0', 'Do not delete this entry')
+            table.add_row('1', 'I am certain that I want to permanently delete this entry')
+            surety = IntPrompt.ask('Confirm deletion?', choices=['0', '1'])
+            if surety == 1:
+                self.database.drop(nos, inplace=True)
+                self.database.reset_index(inplace=True)
+                console.print('[bright_green]The entry has been deleted[/bright_green]')
+                console.print('\n\n')
+    
+    def start_interface(self):
+        self.make_home_table()
+        while True:
+            console.print(self.home)
+            choice = IntPrompt.ask("Enter your choice", choices=list(map(str, range(1, 6))))
+            if choice == 1:
+                self.search_logic()
+            elif choice == 2:
+                self.insert_logic()
+            elif choice == 3:
+                self.delete_logic()
+            elif choice == 4:
+                self.update_logic()
+            else:
+                console.print('[bright_green]Hope you enjoyed it! Bye[/bright_green]')
+                break
+            
+
+
+if __name__ == '__main__':
+    PasswordManager()
